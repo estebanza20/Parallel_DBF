@@ -1,0 +1,59 @@
+#include <iostream>
+#include <cstdio>
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/cuda.hpp>
+#include <opencv2/cudafilters.hpp>
+#include <opencv2/cudaimgproc.hpp>
+
+using namespace cv;
+
+void kernel_test(const cuda::GpuMat& d_src, cuda::GpuMat& d_dest, float sigma, int order);
+
+
+int main(int argc, char* argv[]) {
+  if ( argc != 2 )
+    {
+      std::cout << "usage: <binary> <Image_Path>\n";
+      return -1;
+    }
+
+
+  //CV_LOAD_IMAGE_UNCHANGED, CV_LOAD_IMAGE_GRAYSCALE
+  Mat src = imread(argv[1], CV_LOAD_IMAGE_COLOR); 
+  if (!src.data) exit(1);
+
+  Vec3b pixel = src.at<Vec3b>(0,0);
+  std::cout << "val.x = " << (int) pixel.val[0] << "\n";
+  std::cout << "val.y = " << (int) pixel.val[1] << "\n";
+  std::cout << "val.z = " << (int) pixel.val[2] << "\n";
+  
+  std::cout << "src rows = " << src.rows << "\n";
+  std::cout << "src cols = " << src.cols << "\n";
+
+  cuda::GpuMat d_src(src);
+
+  std::cout << "\nGpuMat info: \n";
+  std::cout << "d_src rows = " << d_src.rows << "\n";
+  std::cout << "d_src cols = " << d_src.cols << "\n";
+  std::cout << "d_src step = " << d_src.step << "\n";
+  std::cout << "d_src channels = " << d_src.channels() << "\n";
+  std::cout << "d_src type = " << d_src.type() << "\n";
+  std::cout << "d_src depth = " << d_src.depth() << "\n";
+  std::cout << "d_src elemSize = " << d_src.elemSize() << "\n";
+  std::cout << "d_src elemSize1 = " << d_src.elemSize1() << "\n";
+  std::cout << "d_src step1 = " << d_src.step1() << "\n";
+  
+  cuda::GpuMat d_dest;
+
+  
+  cuda::bilateralFilter(d_src, d_dest, 41, 20, 150);
+
+  float sigma = 10.0f;
+  int order = 0;
+  
+  kernel_test(d_src, d_dest, sigma, order);
+
+  Mat dest(d_dest);
+  imwrite("out.png", dest);
+  return 0;
+}
