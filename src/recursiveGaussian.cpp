@@ -136,20 +136,35 @@ void benchmark(int iterations)
     checkCudaErrors(cudaFree(d_result));
 }
 
-void kernel_test(const cuda::GpuMat& d_src, cuda::GpuMat& d_dest, float sigma, int order)
+void benchmark(const cuda::GpuMat& d_src, cuda::GpuMat& d_dest, float sigma, int order, int iterations)
 {
    int nthreads = 64;
    StopWatchInterface *timer0 = 0;
    sdkCreateTimer(&timer0);
 
-   cuda::GpuMat d_temp;
-   d_temp.create(d_src.rows, d_src.cols, d_src.type());
-   
-   std::cout << "Kernel test running: \n";
+   cuda::GpuMat d_temp(d_src.rows, d_src.cols, d_src.type());
 
-   sdkStartTimer(&timer0);
-   gaussianFilterRGBA(d_src, d_dest, d_temp, sigma, order, nthreads);
-   sdkStopTimer(&timer0);
+   // warm-up
+   //gaussianFilterRGBA(d_src, d_dest, d_temp, sigma, order, nthreads);
+   //checkCudaErrors(cudaDeviceSynchronize());
    
-   printf("Processing time: %f (ms)\n", sdkGetTimerValue(&timer0));
+   sdkStartTimer(&timer0);
+
+   // execute the kernel
+   //for (int i = 0; i < iterations; i++)
+   //{
+   gaussianFilterRGBA(d_src, d_dest, d_temp, sigma, order, nthreads);
+   //gaussianFilterRGBA(d_src, d_dest, d_temp, sigma, order, nthreads);
+   //}
+
+   //checkCudaErrors(cudaDeviceSynchronize());
+   sdkStopTimer(&timer0);
+
+   // check if kernel execution generated an error
+   getLastCudaError("Kernel execution failed");
+
+   printf("Total Processing time: %f (ms)\n", sdkGetTimerValue(&timer0));
+   printf("Mean Processing time: %f (ms)\n", sdkGetTimerValue(&timer0)/iterations);
+   printf("%.2f Mpixels/sec\n", (d_src.cols*d_src.rows*iterations / (sdkGetTimerValue(&timer) / 1000.0f)) / 1e6);
+
 }

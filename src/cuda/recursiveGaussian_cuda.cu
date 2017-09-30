@@ -63,6 +63,21 @@ void transpose(uint *d_src, uint *d_dest, uint width, int height)
    getLastCudaError("Kernel execution failed");
 }
 
+void transpose(const GpuMat& d_src, GpuMat& d_dest)
+{
+   int width = d_src.cols;
+   int height = d_src.rows;
+
+   d_dest.cols = height;
+   d_dest.rows = width;
+   d_dest.step = d_dest.cols * d_dest.elemSize();
+   
+   dim3 grid(iDivUp(width, BLOCK_DIM), iDivUp(height, BLOCK_DIM), 1);
+   dim3 threads(BLOCK_DIM, BLOCK_DIM, 1);
+   d_transpose<<< grid, threads >>>(d_dest, d_src);
+   getLastCudaError("Kernel execution failed");
+}
+
 /*
   Perform Gaussian filter on a 2D image using CUDA
 
@@ -170,8 +185,13 @@ void gaussianFilterRGBA(const GpuMat& d_src,
 {
    int width = d_src.cols;
    int height = d_src.rows;
+
+   //Make sure GpuMats have the same dimensions
+   //d_dest.cols = d_temp.cols = width;
+   //d_dest.rows = d_temp.rows = height;
+   //d_dest.step = d_temp.step = d_src.step;
    
-   // compute filter coefficients
+   //Compute filter coefficients
    const float
       nsigma = sigma < 0.1f ? 0.1f : sigma,
    		       alpha = 1.695f / nsigma,
@@ -223,7 +243,6 @@ void gaussianFilterRGBA(const GpuMat& d_src,
 
    coefp = (a0+a1)/(1+b1+b2);
    coefn = (a2+a3)/(1+b1+b2);
-
    
    d_recursiveGaussian_rgba<<< iDivUp(width, nthreads), nthreads >>>(d_src,
    								     d_temp,
@@ -235,19 +254,24 @@ void gaussianFilterRGBA(const GpuMat& d_src,
    								     coefn);
    getLastCudaError("Kernel execution failed");
 
-   // transpose(d_temp, d_dest, width, height);
-   // getLastCudaError("transpose: Kernel execution failed");
+   transpose(d_temp, d_dest);
+   getLastCudaError("transpose: Kernel execution failed");
 
-   // d_recursiveGaussian_rgba<<< iDivUp(height, nthreads), nthreads >>>(d_dest,
-   // 								      d_temp,
-   // 								      height,
-   // 								      width,
-   // 								      a0, a1, a2, a3,
-   // 								      b1, b2,
-   // 								      coefp,
-   // 								      coefn);
+   //Adjust temp dimensions to dest dimensions for recursive gaussian pass
+   d_temp.rows = d_dest.rows;
+   d_temp.cols = d_dest.cols;
+   d_temp.step = d_dest.step;
+   
+   d_recursiveGaussian_rgba<<< iDivUp(height, nthreads), nthreads >>>(d_dest,
+   								      d_temp,
+   								      height,
+   								      width,
+   								      a0, a1, a2, a3,
+   								      b1, b2,
+   								      coefp,
+   								      coefn);
 
-   // getLastCudaError("Kernel execution failed");
+   getLastCudaError("Kernel execution failed");
 
-   // transpose(d_temp, d_dest, height, width);
+   transpose(d_temp, d_dest);
 }

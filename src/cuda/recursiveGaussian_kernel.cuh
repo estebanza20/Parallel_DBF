@@ -210,22 +210,58 @@ d_recursiveGaussian_rgba(uint *id, uint *od, int w, int h, float a0, float a1, f
     }
 }
 
-__device__ float4 gpuMatElemToFloat(const uchar3& elem)
+
+//--------------------------------------------------------------------------
+//------------------    GpuMat/PtrStepSz test     --------------------------
+//--------------------------------------------------------------------------
+
+// Transpose kernel (see transpose CUDA Sample for details)
+__global__ void d_transpose(const PtrStepSz<uchar3> src, PtrStepSz<uchar3> dest)
+{
+   __shared__ uchar3 block[BLOCK_DIM][BLOCK_DIM+1];
+
+   // read the matrix tile into shared memory
+   unsigned int x = blockIdx.x * BLOCK_DIM + threadIdx.x;
+   unsigned int y = blockIdx.y * BLOCK_DIM + threadIdx.y;
+
+   int width = src.cols;
+   int height = src.rows;
+   
+   if ((x < width) && (y < height))
+   {
+      block[threadIdx.y][threadIdx.x] = src(y,x);
+   }
+
+   __syncthreads();
+
+   // write the transposed matrix tile to global memory
+   x = blockIdx.y * BLOCK_DIM + threadIdx.x;
+   y = blockIdx.x * BLOCK_DIM + threadIdx.y;
+
+   if ((x < height) && (y < width))
+   {
+      dest(y,x) = block[threadIdx.x][threadIdx.y];
+   }
+}
+
+
+
+__device__ float4 gpuMatElemToFloat(const uchar3 elem)
 {
    float4 r;
    r.x = elem.x/255.0f;
    r.y = elem.y/255.0f;
    r.z = elem.z/255.0f;
-   r.w = 0;
+   r.w = 0.0;
    return r;
 }
 
 __device__ uchar3 floatToGpuMatElem(const float4 val)
 {
    uchar3 r;
-   r.x = __saturatef(val.x);   // clamp to [0.0, 1.0]
-   r.y = __saturatef(val.y);
-   r.z = __saturatef(val.z);
+   r.x = __saturatef(val.x)*255;
+   r.y = __saturatef(val.y)*255;
+   r.z = __saturatef(val.z)*255;
    return r;
 }
 
@@ -244,11 +280,6 @@ d_recursiveGaussian_rgba(const PtrStepSz<uchar3> src, PtrStepSz<uchar3> dest, in
       printf("PtrStepSzb src cols = %d \n", src.cols);
       printf("PtrStepSzb src step = %d \n", src.step);
       printf("PtrStepSzb src elemsize = %d \n", src.elemSize());
-      
-      uchar3 val = src(y,x);
-      printf("val.x = %d \n", val.x);
-      printf("val.y = %d \n", val.y);
-      printf("val.z = %d \n", val.z);
    }
 
    // forward pass

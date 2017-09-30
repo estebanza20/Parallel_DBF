@@ -7,7 +7,7 @@
 
 using namespace cv;
 
-void kernel_test(const cuda::GpuMat& d_src, cuda::GpuMat& d_dest, float sigma, int order);
+void benchmark(const cuda::GpuMat& d_src, cuda::GpuMat& d_dest, float sigma, int order, int iterations);
 
 
 int main(int argc, char* argv[]) {
@@ -17,15 +17,8 @@ int main(int argc, char* argv[]) {
       return -1;
     }
 
-
-  //CV_LOAD_IMAGE_UNCHANGED, CV_LOAD_IMAGE_GRAYSCALE
   Mat src = imread(argv[1], CV_LOAD_IMAGE_COLOR); 
   if (!src.data) exit(1);
-
-  Vec3b pixel = src.at<Vec3b>(0,0);
-  std::cout << "val.x = " << (int) pixel.val[0] << "\n";
-  std::cout << "val.y = " << (int) pixel.val[1] << "\n";
-  std::cout << "val.z = " << (int) pixel.val[2] << "\n";
   
   std::cout << "src rows = " << src.rows << "\n";
   std::cout << "src cols = " << src.cols << "\n";
@@ -44,16 +37,18 @@ int main(int argc, char* argv[]) {
   std::cout << "d_src step1 = " << d_src.step1() << "\n";
   
   cuda::GpuMat d_dest;
+  d_dest.create(d_src.rows, d_src.cols, d_src.type());
 
-  
-  cuda::bilateralFilter(d_src, d_dest, 41, 20, 150);
+  //TODO: Check bilateral filter OpenCV implementation
+  //cuda::bilateralFilter(d_src, d_dest, 41, 20, 150);
 
-  float sigma = 10.0f;
+  float sigma = 40.0f;
   int order = 0;
+  int iterations = 10;
   
-  kernel_test(d_src, d_dest, sigma, order);
-
+  benchmark(d_src, d_dest, sigma, order, iterations);
+  
   Mat dest(d_dest);
-  imwrite("out.png", dest);
+  imwrite("out.jpg", dest);
   return 0;
 }
