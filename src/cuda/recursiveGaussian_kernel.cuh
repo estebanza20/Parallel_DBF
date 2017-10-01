@@ -72,7 +72,6 @@ __device__ float3 gpuMatElemToFloat(const uchar3 elem)
    r.x = elem.x/255.0f;
    r.y = elem.y/255.0f;
    r.z = elem.z/255.0f;
-   //r.w = 0.0;
    return r;
 }
 
