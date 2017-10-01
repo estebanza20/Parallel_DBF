@@ -6,8 +6,10 @@
 #include <opencv2/cudaimgproc.hpp>
 
 using namespace cv;
+using namespace cv::cuda;
 
-void benchmark(const cuda::GpuMat& d_src, cuda::GpuMat& d_dest, float sigma, int order, int iterations);
+
+void benchmark(const GpuMat& d_src, GpuMat& d_dest, float sigma, int order, int iterations);
 
 
 int main(int argc, char* argv[]) {
@@ -23,7 +25,7 @@ int main(int argc, char* argv[]) {
   std::cout << "src rows = " << src.rows << "\n";
   std::cout << "src cols = " << src.cols << "\n";
 
-  cuda::GpuMat d_src(src);
+  GpuMat d_src(src);
 
   std::cout << "\nGpuMat info: \n";
   std::cout << "d_src rows = " << d_src.rows << "\n";
@@ -36,13 +38,13 @@ int main(int argc, char* argv[]) {
   std::cout << "d_src elemSize1 = " << d_src.elemSize1() << "\n";
   std::cout << "d_src step1 = " << d_src.step1() << "\n";
   
-  cuda::GpuMat d_dest;
+  GpuMat d_dest;
   d_dest.create(d_src.rows, d_src.cols, d_src.type());
 
   //TODO: Check bilateral filter OpenCV implementation
   //cuda::bilateralFilter(d_src, d_dest, 41, 20, 150);
 
-  float sigma = 50.0f;
+  float sigma = 10.0f;
   int order = 0;
   int iterations = 100;
   
