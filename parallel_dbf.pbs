@@ -10,4 +10,4 @@ module add cuda/7.5 opencv/3.1.0 ffmpeg/2.6.2 gcc/4.9.2 openmpi/1.10.0 tbb
 
 cd ${PBS_O_WORKDIR}
 
-./bin/testOCVGPU.x ./images/tiger_4k.jpg
+./bin/testOCVGPU.x ./images/tiger_8k.jpg

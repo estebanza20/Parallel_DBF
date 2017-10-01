@@ -271,16 +271,16 @@ __global__ void
 d_recursiveGaussian_rgba(const PtrStepSz<uchar3> src, PtrStepSz<uchar3> dest, int w, int h, float a0, float a1, float a2, float a3, float b1, float b2, float coefp, float coefn)
 {
    unsigned int x = blockIdx.x*blockDim.x + threadIdx.x;
-   unsigned int y = blockIdx.y*blockDim.y + threadIdx.y;
+   //unsigned int y = blockIdx.y*blockDim.y + threadIdx.y;
 
    if (x >= w) return;
 
-   if (x == 0 && y == 0){
-      printf("\nPtrStepSzb src rows = %d \n", src.rows);
-      printf("PtrStepSzb src cols = %d \n", src.cols);
-      printf("PtrStepSzb src step = %d \n", src.step);
-      printf("PtrStepSzb src elemsize = %d \n", src.elemSize());
-   }
+   // if (x == 0 && y == 0){
+   //    printf("\nPtrStepSzb src rows = %d \n", src.rows);
+   //    printf("PtrStepSzb src cols = %d \n", src.cols);
+   //    printf("PtrStepSzb src step = %d \n", src.step);
+   //    printf("PtrStepSzb src elemsize = %d \n", src.elemSize());
+   // }
 
    // forward pass
    float4 xp = make_float4(0.0f);  // previous input

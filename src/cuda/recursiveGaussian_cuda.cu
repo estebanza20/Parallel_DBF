@@ -74,7 +74,7 @@ void transpose(const GpuMat& d_src, GpuMat& d_dest)
    
    dim3 grid(iDivUp(width, BLOCK_DIM), iDivUp(height, BLOCK_DIM), 1);
    dim3 threads(BLOCK_DIM, BLOCK_DIM, 1);
-   d_transpose<<< grid, threads >>>(d_dest, d_src);
+   d_transpose<<< grid, threads >>>(d_src, d_dest);
    getLastCudaError("Kernel execution failed");
 }
 
@@ -187,9 +187,9 @@ void gaussianFilterRGBA(const GpuMat& d_src,
    int height = d_src.rows;
 
    //Make sure GpuMats have the same dimensions
-   //d_dest.cols = d_temp.cols = width;
-   //d_dest.rows = d_temp.rows = height;
-   //d_dest.step = d_temp.step = d_src.step;
+   d_dest.cols = d_temp.cols = width;
+   d_dest.rows = d_temp.rows = height;
+   d_dest.step = d_temp.step = d_src.step;
    
    //Compute filter coefficients
    const float

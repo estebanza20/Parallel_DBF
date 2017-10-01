@@ -42,9 +42,9 @@ int main(int argc, char* argv[]) {
   //TODO: Check bilateral filter OpenCV implementation
   //cuda::bilateralFilter(d_src, d_dest, 41, 20, 150);
 
-  float sigma = 40.0f;
+  float sigma = 50.0f;
   int order = 0;
-  int iterations = 10;
+  int iterations = 100;
   
   benchmark(d_src, d_dest, sigma, order, iterations);
   
