@@ -66,17 +66,17 @@ __global__ void d_transpose(const PtrStepSz<uchar3> src, PtrStepSz<uchar3> dest)
 
 
 
-__device__ float4 gpuMatElemToFloat(const uchar3 elem)
+__device__ float3 gpuMatElemToFloat(const uchar3 elem)
 {
-   float4 r;
+   float3 r;
    r.x = elem.x/255.0f;
    r.y = elem.y/255.0f;
    r.z = elem.z/255.0f;
-   r.w = 0.0;
+   //r.w = 0.0;
    return r;
 }
 
-__device__ uchar3 floatToGpuMatElem(const float4 val)
+__device__ uchar3 floatToGpuMatElem(const float3 val)
 {
    uchar3 r;
    r.x = __saturatef(val.x)*255;
@@ -98,9 +98,9 @@ d_recursiveGaussian_rgba(const PtrStepSz<uchar3> src, PtrStepSz<uchar3> dest,
    if (x >= w) return;
 
    // forward pass
-   float4 xp = make_float4(0.0f);  // previous input
-   float4 yp = make_float4(0.0f);  // previous output
-   float4 yb = make_float4(0.0f);  // previous output by 2
+   float3 xp = make_float3(0.0f);  // previous input
+   float3 yp = make_float3(0.0f);  // previous output
+   float3 yb = make_float3(0.0f);  // previous output by 2
 #if CLAMP_TO_EDGE
    xp = gpuMatElemToFloat(src(0,x));
    yb = coefp*xp;
@@ -109,8 +109,8 @@ d_recursiveGaussian_rgba(const PtrStepSz<uchar3> src, PtrStepSz<uchar3> dest,
 
    for (int y = 0; y < h; y++)
    {
-      float4 xc = gpuMatElemToFloat(src(y,x));
-      float4 yc = a0*xc + a1*xp - b1*yp - b2*yb;
+      float3 xc = gpuMatElemToFloat(src(y,x));
+      float3 yc = a0*xc + a1*xp - b1*yp - b2*yb;
       dest(y,x) = floatToGpuMatElem(yc);
       xp = xc;
       yb = yp;
@@ -119,10 +119,10 @@ d_recursiveGaussian_rgba(const PtrStepSz<uchar3> src, PtrStepSz<uchar3> dest,
 
    // reverse pass
    // ensures response is symmetrical
-   float4 xn = make_float4(0.0f);
-   float4 xa = make_float4(0.0f);
-   float4 yn = make_float4(0.0f);
-   float4 ya = make_float4(0.0f);
+   float3 xn = make_float3(0.0f);
+   float3 xa = make_float3(0.0f);
+   float3 yn = make_float3(0.0f);
+   float3 ya = make_float3(0.0f);
 #if CLAMP_TO_EDGE
    xn = xa = gpuMatElemToFloat(src(h-1,x));
    yn = coefn*xn;
@@ -131,8 +131,8 @@ d_recursiveGaussian_rgba(const PtrStepSz<uchar3> src, PtrStepSz<uchar3> dest,
 
    for (int y = h-1; y >= 0; y--)
    {
-      float4 xc = gpuMatElemToFloat(src(y,x));
-      float4 yc = a2*xn + a3*xa - b1*yn - b2*ya;
+      float3 xc = gpuMatElemToFloat(src(y,x));
+      float3 yc = a2*xn + a3*xa - b1*yn - b2*ya;
       xa = xn;
       xn = xc;
       ya = yn;

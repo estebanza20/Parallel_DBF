@@ -38,8 +38,7 @@ int main(int argc, char* argv[]) {
   std::cout << "d_src elemSize1 = " << d_src.elemSize1() << "\n";
   std::cout << "d_src step1 = " << d_src.step1() << "\n";
   
-  GpuMat d_dest;
-  d_dest.create(d_src.rows, d_src.cols, d_src.type());
+  GpuMat d_dest(d_src.rows, d_src.cols, d_src.type());
 
   //TODO: Check bilateral filter OpenCV implementation
   //cuda::bilateralFilter(d_src, d_dest, 41, 20, 150);
