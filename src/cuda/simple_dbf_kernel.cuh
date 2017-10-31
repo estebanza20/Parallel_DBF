@@ -71,8 +71,8 @@ void d_simpleDBF_RGB(const PtrStepSz<uchar3> src, PtrStep<uchar3> src_sharp, Ptr
   if (x >= width || y >= height)
     return;
 
-  float3 sum1 = make_float3(0.0f);
-  float sum2 = 0.0f;
+  float3 color_sum = make_float3(0.0f);
+  float norm_sum = 0.0f;
 
   int r = k_size/2;
 
@@ -85,26 +85,47 @@ void d_simpleDBF_RGB(const PtrStepSz<uchar3> src, PtrStep<uchar3> src_sharp, Ptr
 
   int xc, yc;
 
-  for (int i =  -r; i < r; ++i) {
-    xc = ::clamp(x+i,0,width-1);
 
-    for (int j = -r; j < r; ++j) {
-      yc = ::clamp(y+j,0,height-1);
+  if (x-r >=0 && y-r >=0 && x+r < width && y+r < height) {
+    for (int i =  -r; i < r; ++i) {
+      xc = x+i;
+      for (int j = -r; j < r; ++j) {
+        yc = y+i;
+        pixel_color = gpuMatElemToFloat(src(yc,xc));
+        pixel_color_sharp = gpuMatElemToFloat(src_sharp(yc,xc));
 
-      pixel_color = gpuMatElemToFloat(src(yc,xc));
-      pixel_color_sharp = gpuMatElemToFloat(src_sharp(yc,xc));
+        space_dist2 = (xc-x) * (xc-x) + (yc-y) * (yc-y);
 
-      space_dist2 = (xc-x) * (xc-x) + (yc-y) * (yc-y);
+        weight = __expf(space_dist2 * sigma_spatial2_inv_half +
+                     norm_l2(pixel_color-center_color) * sigma_color2_inv_half);
 
-      weight = exp(space_dist2 * sigma_spatial2_inv_half +
-                   norm_l2(pixel_color-center_color) * sigma_color2_inv_half);
+        color_sum += weight * pixel_color_sharp;
+        norm_sum += weight;
+      }
+    }
+  }
+  else {
+    for (int i =  -r; i < r; ++i) {
+      xc = ::clamp(x+i,0,width-1);
 
-      sum1 += weight * pixel_color_sharp;
-      sum2 += weight;
-     }
-   }
+      for (int j = -r; j < r; ++j) {
+        yc = ::clamp(y+j,0,height-1);
 
-   dest(y,x) = floatToGpuMatElem(sum1/sum2);
+        pixel_color = gpuMatElemToFloat(src(yc,xc));
+        pixel_color_sharp = gpuMatElemToFloat(src_sharp(yc,xc));
+
+        space_dist2 = (xc-x) * (xc-x) + (yc-y) * (yc-y);
+
+        weight = __expf(space_dist2 * sigma_spatial2_inv_half +
+                     norm_l2(pixel_color-center_color) * sigma_color2_inv_half);
+
+        color_sum += weight * pixel_color_sharp;
+        norm_sum += weight;
+      }
+    }
+  }
+
+   dest(y,x) = floatToGpuMatElem(color_sum/norm_sum);
 }
 
 #endif

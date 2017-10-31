@@ -27,6 +27,8 @@ void simpleDBF_RGB_GPU(const GpuMat& d_src, GpuMat& d_dest,
   float sigma_spatial2_inv_half = -1.0f/(2*sigma_space*sigma_space);
   float sigma_color2_inv_half = -1.0f/(2*sigma_color*sigma_color);
 
+  cudaFuncSetCacheConfig(d_simpleDBF_RGB, cudaFuncCachePreferL1);
+
   d_simpleDBF_RGB<<< grid, block >>>(d_src, d_temp, d_dest,
                                      kernel_size,
                                      sigma_spatial2_inv_half,
