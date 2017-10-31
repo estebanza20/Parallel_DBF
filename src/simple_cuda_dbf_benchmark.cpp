@@ -33,27 +33,23 @@
     Thanks to David Tschumperl� and all the CImg contributors!
 */
 
-#include "recursiveGaussian.hh"
+#include "simple_dbf.hh"
 
 void benchmark(const GpuMat& d_src, GpuMat& d_dest,
-	       float sigma, int order, int iterations)
+               float kernel_size, float sigma_color, float sigma_space, int iterations)
 {
-   int nthreads = 64;
    StopWatchInterface *timer0 = 0;
    sdkCreateTimer(&timer0);
 
-   GpuMat d_temp(d_src.rows, d_src.cols, d_src.type());
-
    // warm-up
-   gaussianFilterRGBA(d_src, d_dest, d_temp, sigma, order, nthreads);
-   checkCudaErrors(cudaDeviceSynchronize());
+   simpleDBF_RGB_GPU(d_src, d_dest, kernel_size, sigma_color, sigma_space);
    
    sdkStartTimer(&timer0);
 
    // execute the kernel
    for (int i = 0; i < iterations; i++)
    {
-      gaussianFilterRGBA(d_src, d_dest, d_temp, sigma, order, nthreads);
+     simpleDBF_RGB_GPU(d_src, d_dest, kernel_size, sigma_color, sigma_space);
    }
 
    checkCudaErrors(cudaDeviceSynchronize());
@@ -66,6 +62,4 @@ void benchmark(const GpuMat& d_src, GpuMat& d_dest,
 
    printf("Total Processing time: %f (ms)\n", total_time);
    printf("Mean Processing time: %f (ms)\n", total_time/iterations);
-   printf("%f Mpixels/sec\n", (d_src.cols*d_src.rows*iterations / (total_time / 1000.0f)) / 1e6);
-
 }

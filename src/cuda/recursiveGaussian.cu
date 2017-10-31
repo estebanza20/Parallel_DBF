@@ -55,12 +55,12 @@ void transpose(const GpuMat& d_src, GpuMat& d_dest)
    
    dim3 grid(iDivUp(width, BLOCK_DIM), iDivUp(height, BLOCK_DIM), 1);
    dim3 threads(BLOCK_DIM, BLOCK_DIM, 1);
-   d_transpose<<< grid, threads >>>(d_src, d_dest);
+   d_transpose<<< grid, threads >>>(d_src, d_dest, width, height);
    getLastCudaError("Kernel execution failed");
 }
 
 
-void gaussianFilterRGBA(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
+void gaussianFilterRGB(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
 			float sigma, int order, int nthreads)
 {
    int width = d_src.cols;
@@ -124,7 +124,7 @@ void gaussianFilterRGBA(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
    coefp = (a0+a1)/(1+b1+b2);
    coefn = (a2+a3)/(1+b1+b2);
    
-   d_recursiveGaussian_rgba<<< iDivUp(width, nthreads), nthreads >>>(d_src,
+   d_recursiveGaussian_rgb<<< iDivUp(width, nthreads), nthreads >>>(d_src,
    								     d_temp,
    								     width,
    								     height,
@@ -133,7 +133,7 @@ void gaussianFilterRGBA(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
    								     coefp,
    								     coefn);
    getLastCudaError("Kernel execution failed");
-
+   
    transpose(d_temp, d_dest);
    getLastCudaError("transpose: Kernel execution failed");
 
@@ -142,7 +142,7 @@ void gaussianFilterRGBA(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
    d_temp.cols = d_dest.cols;
    d_temp.step = d_dest.step;
    
-   d_recursiveGaussian_rgba<<< iDivUp(height, nthreads), nthreads >>>(d_dest,
+   d_recursiveGaussian_rgb<<< iDivUp(height, nthreads), nthreads >>>(d_dest,
    								      d_temp,
    								      height,
    								      width,

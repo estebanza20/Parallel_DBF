@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(OpenCVGPU_Test)
+project(Simple_CUDA_DBF)
 
-set(APP_EXEC "testOCVGPU.x")
-set(APP_SRC "tests/ocv_gpu_test.cpp")
+set(APP_EXEC "simple_cuda_dbf.x")
+set(APP_SRC "tests/simple_cuda_dbf.cpp")
 
-#Packages 
+#Packages
 find_package(CUDA REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(MPI REQUIRED)
@@ -26,18 +26,18 @@ include_directories(
 
 #CUDA Related
 file(GLOB CUDA_SRCS "src/cuda/*.cu")
-cuda_add_library(CudaFunctions ${CUDA_SRCS})
+cuda_add_library(CudaRelated ${CUDA_SRCS})
 
 #CPP Related
 file(GLOB SRCS "src/*.cpp")
-add_library(TestOpenCVGPU ${SRCS})
-target_include_directories(TestOpenCVGPU PUBLIC include)
+add_library(CppRelated ${SRCS})
+target_include_directories(CppRelated PUBLIC include)
 
 #Executable
 add_executable(${APP_EXEC} ${APP_SRC})
 target_link_libraries(
   ${APP_EXEC}
-  TestOpenCVGPU
-  CudaFunctions
+  CppRelated
+  CudaRelated
   ${OpenCV_LIBS}
   ${MPI_CXX_LIBRARIES})

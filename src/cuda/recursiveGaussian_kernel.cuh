@@ -35,17 +35,16 @@ using namespace cv::cuda;
 #define CLAMP_TO_EDGE 1
 
 
-// Transpose kernel (see transpose CUDA Sample for details)
-__global__ void d_transpose(const PtrStepSz<uchar3> src, PtrStepSz<uchar3> dest)
+// Transpose kernel
+__global__
+void d_transpose(const PtrStep<uchar3> src, PtrStep<uchar3> dest,
+			    int width, int height)
 {
    __shared__ uchar3 block[BLOCK_DIM][BLOCK_DIM+1];
 
    // read the matrix tile into shared memory
    unsigned int x = blockIdx.x * BLOCK_DIM + threadIdx.x;
    unsigned int y = blockIdx.y * BLOCK_DIM + threadIdx.y;
-
-   int width = src.cols;
-   int height = src.rows;
    
    if ((x < width) && (y < height))
    {
@@ -66,7 +65,8 @@ __global__ void d_transpose(const PtrStepSz<uchar3> src, PtrStepSz<uchar3> dest)
 
 
 
-__device__ float3 gpuMatElemToFloat(const uchar3 elem)
+__device__
+float3 gpuMatElemToFloat(const uchar3 elem)
 {
    float3 r;
    r.x = elem.x/255.0f;
@@ -75,7 +75,8 @@ __device__ float3 gpuMatElemToFloat(const uchar3 elem)
    return r;
 }
 
-__device__ uchar3 floatToGpuMatElem(const float3 val)
+__device__
+uchar3 floatToGpuMatElem(const float3 val)
 {
    uchar3 r;
    r.x = __saturatef(val.x)*255;
@@ -85,8 +86,8 @@ __device__ uchar3 floatToGpuMatElem(const float3 val)
 }
 
 
-__global__ void
-d_recursiveGaussian_rgba(const PtrStepSz<uchar3> src, PtrStepSz<uchar3> dest,
+__global__
+void d_recursiveGaussian_rgb(const PtrStep<uchar3> src, PtrStep<uchar3> dest,
 			 int w, int h,
 			 float a0, float a1, float a2, float a3,
 			 float b1, float b2,

@@ -27,7 +27,7 @@ int iDivUp(int a, int b);
 
 void transpose(const GpuMat& d_src, GpuMat& d_dest);
 
-void gaussianFilterRGBA(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
+void gaussianFilterRGB(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
 			float sigma, int order, int nthreads);
 
 #endif
