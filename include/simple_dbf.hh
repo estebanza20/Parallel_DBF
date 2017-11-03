@@ -28,4 +28,10 @@ void simpleDBF_RGB_GPU(const GpuMat& d_src,
                        float sigma_color,
                        float sigma_space);
 
+void smemDBF_RGB_GPU(const GpuMat& d_src,
+                       GpuMat& d_dest,
+                       int kernel_size,
+                       float sigma_color,
+                       float sigma_space);
+
 #endif

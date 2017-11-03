@@ -25,16 +25,9 @@ __device__ __forceinline__ float norm_l1(const float2& a) { return ::fabs(a.x) +
 __device__ __forceinline__ float norm_l1(const float3& a) { return ::fabs(a.x) + ::fabs(a.y) + ::fabs(a.z); }
 __device__ __forceinline__ float norm_l1(const float4& a) { return ::fabs(a.x) + ::fabs(a.y) + ::fabs(a.z) + ::fabs(a.w); }
 
-// __device__ __forceinline__ float sqr(const float& a) {return a * a;}
-
 __device__ __forceinline__ float norm_l2(const float2& a) { return ::dot(a,a);}
 __device__ __forceinline__ float norm_l2(const float3& a) { return ::dot(a,a);}
 __device__ __forceinline__ float norm_l2(const float4& a) { return ::dot(a,a);}
-//
-// __device__ __forceinline__ float norm_l2(const float& a)  { return a.x * a.x}
-// __device__ __forceinline__ float norm_l2(const float2& a) { return a.x * a.x + a.y * a.y }
-// __device__ __forceinline__ float norm_l2(const float3& a) { return a.x * a.x + a.y * a.y + a.z * a.z}
-// __device__ __forceinline__ float norm_l2(const float4& a) { return a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w}
 
 
 __device__
@@ -71,30 +64,29 @@ void d_simpleDBF_RGB(const PtrStepSz<uchar3> src, PtrStep<uchar3> src_sharp, Ptr
   if (x >= width || y >= height)
     return;
 
-  float3 color_sum = make_float3(0.0f);
-  float norm_sum = 0.0f;
 
   int r = k_size/2;
 
-  float3 pixel_color;
-  float3 pixel_color_sharp;
+  float3 pixel_color, pixel_color_sharp;
   float3 center_color = gpuMatElemToFloat(src(y,x));
+
+  float3 color_sum = make_float3(0.0f);
+  float norm_sum = 0.0f;
 
   float weight;
   float space_dist2;
 
-  int xc, yc;
-
+  int xg, yg;
 
   if (x-r >=0 && y-r >=0 && x+r < width && y+r < height) {
     for (int i =  -r; i < r; ++i) {
-      xc = x+i;
+      xg = x+i;
       for (int j = -r; j < r; ++j) {
-        yc = y+i;
-        pixel_color = gpuMatElemToFloat(src(yc,xc));
-        pixel_color_sharp = gpuMatElemToFloat(src_sharp(yc,xc));
+        yg = y+i;
+        pixel_color = gpuMatElemToFloat(src(yg,xg));
+        pixel_color_sharp = gpuMatElemToFloat(src_sharp(yg,xg));
 
-        space_dist2 = (xc-x) * (xc-x) + (yc-y) * (yc-y);
+        space_dist2 = (xg-x) * (xg-x) + (yg-y) * (yg-y);
 
         weight = __expf(space_dist2 * sigma_spatial2_inv_half +
                      norm_l2(pixel_color-center_color) * sigma_color2_inv_half);
@@ -106,15 +98,15 @@ void d_simpleDBF_RGB(const PtrStepSz<uchar3> src, PtrStep<uchar3> src_sharp, Ptr
   }
   else {
     for (int i =  -r; i < r; ++i) {
-      xc = ::clamp(x+i,0,width-1);
+      xg = ::clamp(x+i,0,width-1);
 
       for (int j = -r; j < r; ++j) {
-        yc = ::clamp(y+j,0,height-1);
+        yg = ::clamp(y+j,0,height-1);
 
-        pixel_color = gpuMatElemToFloat(src(yc,xc));
-        pixel_color_sharp = gpuMatElemToFloat(src_sharp(yc,xc));
+        pixel_color = gpuMatElemToFloat(src(yg,xg));
+        pixel_color_sharp = gpuMatElemToFloat(src_sharp(yg,xg));
 
-        space_dist2 = (xc-x) * (xc-x) + (yc-y) * (yc-y);
+        space_dist2 = (xg-x) * (xg-x) + (yg-y) * (yg-y);
 
         weight = __expf(space_dist2 * sigma_spatial2_inv_half +
                      norm_l2(pixel_color-center_color) * sigma_color2_inv_half);
@@ -127,5 +119,134 @@ void d_simpleDBF_RGB(const PtrStepSz<uchar3> src, PtrStep<uchar3> src_sharp, Ptr
 
    dest(y,x) = floatToGpuMatElem(color_sum/norm_sum);
 }
+
+__global__
+void d_smemDBF_RGB(const PtrStepSz<uchar3> src, PtrStep<uchar3> src_sharp, PtrStep<uchar3> dest,
+                   const dim3 r_num_blocks,
+                   const int k_size,
+                   const float sigma_spatial2_inv_half, const float sigma_color2_inv_half)
+{
+  int height = src.rows;
+  int width = src.cols;
+
+  int x = blockIdx.x * blockDim.x + threadIdx.x;
+  int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if (x >= width || y >= height)
+    return;
+
+
+  int r = k_size/2;
+
+  extern __shared__ uchar3 image_shmem[];
+
+  int x_block_offset, y_block_offset;
+  int xl, yl, xg, yg;
+
+  for (int bxi = -r_num_blocks.x; bxi <= r_num_blocks.x; ++bxi) {
+    x_block_offset = bxi * blockDim.x;
+    xl = threadIdx.x + r + x_block_offset;
+    xg = x + x_block_offset;
+
+    for (int byi = -r_num_blocks.y; byi <= r_num_blocks.y; ++byi) {
+      y_block_offset = byi * blockDim.y;
+      yl = threadIdx.y + r + y_block_offset;
+      yg = y + y_block_offset;
+
+      if (xl >= 0 && yl >= 0 && xl < k_size+blockDim.x && yl < k_size+blockDim.y) {
+        xg = ::clamp(xg,0,width-1);
+        yg = ::clamp(yg,0,height-1);
+        image_shmem[xl + (k_size+blockDim.x) * yl] = src(yg,xg);
+      }
+    }
+  }
+
+  __syncthreads();
+
+
+  float3 pixel_color, pixel_color_sharp;
+  float3 center_color = gpuMatElemToFloat(src(y,x));
+
+  float3 color_sum = make_float3(0.0f);
+  float norm_sum = 0.0f;
+
+  float weight;
+  float space_dist2;
+
+
+
+  for (int i =  -r; i <= r; ++i) {
+    xl = threadIdx.x + r + i;
+    xg = x + i;
+    for (int j = -r; j <= r; ++j) {
+      yl = threadIdx.y + r + j;
+      yg = y + j;
+      pixel_color = gpuMatElemToFloat(image_shmem[xl + (k_size+blockDim.x) * yl]);
+      //FIXME: Currently using same image_shmem for pixel_color_sharp
+      pixel_color_sharp = gpuMatElemToFloat(image_shmem[xl + (k_size+blockDim.x) * yl]);
+
+      space_dist2 = (xg-x) * (xg-x) + (yg-y) * (yg-y);
+
+      weight = __expf(space_dist2 * sigma_spatial2_inv_half +
+                      norm_l2(pixel_color-center_color) * sigma_color2_inv_half);
+
+      color_sum += weight * pixel_color_sharp;
+      norm_sum += weight;
+    }
+  }
+
+
+
+  // if (x-r >=0 && y-r >=0 && x+r < width && y+r < height) {
+  //   for (int i =  -r; i < r; ++i) {
+  //     xl = threadIdx.x+i;
+  //     xg = x+i;
+  //     for (int j = -r; j < r; ++j) {
+  //       yl = threadIdx.y+j;
+  //       yg = y+j;
+  //       pixel_color = gpuMatElemToFloat(image_shmem[(xl+r) + (k_size+blockDim.x) * (yl+r)]);
+  //       //FIXME: Currently using same image_shmem for pixel_color_sharp
+  //       pixel_color_sharp = gpuMatElemToFloat(image_shmem[(xl+r) + (k_size+blockDim.x) * (yl+r)]);
+
+  //       space_dist2 = (xg-x) * (xg-x) + (yg-y) * (yg-y);
+
+  //       weight = __expf(space_dist2 * sigma_spatial2_inv_half +
+  //                    norm_l2(pixel_color-center_color) * sigma_color2_inv_half);
+
+  //       color_sum += weight * pixel_color_sharp;
+  //       norm_sum += weight;
+  //     }
+  //   }
+  // }
+  // else { 
+  //   //FIXME: Testing non-clamped xg,xy values
+  //   for (int i =  -r; i < r; ++i) {
+  //     // xg = ::clamp(x+i,0,width-1);
+  //     xl = threadIdx.x+i;
+  //     xg = x+i;
+
+  //     for (int j = -r; j < r; ++j) {
+  //       // yg = ::clamp(y+j,0,height-1);
+  //       yl = threadIdx.y+j;
+  //       yg = y+i;
+
+  //       pixel_color = gpuMatElemToFloat(image_shmem[(xl+r) + (k_size+blockDim.x) * (yl+r)]);
+  //       //FIXME: Currently using same image_shmem for pixel_color_sharp
+  //       pixel_color_sharp = gpuMatElemToFloat(image_shmem[(xl+r) + (k_size+blockDim.x) * (yl+r)]);
+
+  //       space_dist2 = (xg-x) * (xg-x) + (yg-y) * (yg-y);
+
+  //       weight = __expf(space_dist2 * sigma_spatial2_inv_half +
+  //                    norm_l2(pixel_color-center_color) * sigma_color2_inv_half);
+
+  //       color_sum += weight * pixel_color_sharp;
+  //       norm_sum += weight;
+  //     }
+  //   }
+  // }
+
+   dest(y,x) = floatToGpuMatElem(color_sum/norm_sum);
+}
+
 
 #endif

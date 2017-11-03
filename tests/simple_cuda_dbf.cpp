@@ -45,13 +45,13 @@ int main(int argc, char* argv[]) {
   //TODO: Check bilateral filter OpenCV implementation
   //cuda::bilateralFilter(d_src, d_dest, 41, 20, 150);
 
-  int kernel_size = 80;
-  float sigma_color = 0.4;
-  float sigma_space = 40.0;
+  int kernel_size = 30;
+  float sigma_color = 0.25;
+  float sigma_space = 30.0;
   int iterations = 1;
-  
+
   benchmark(d_src, d_dest, kernel_size, sigma_color, sigma_space, iterations);
-  
+
   Mat dest(d_dest);
   imwrite("out.jpg", dest);
   return 0;

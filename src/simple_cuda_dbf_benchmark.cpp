@@ -42,14 +42,14 @@ void benchmark(const GpuMat& d_src, GpuMat& d_dest,
    sdkCreateTimer(&timer0);
 
    // warm-up
-   simpleDBF_RGB_GPU(d_src, d_dest, kernel_size, sigma_color, sigma_space);
+   smemDBF_RGB_GPU(d_src, d_dest, kernel_size, sigma_color, sigma_space);
    
    sdkStartTimer(&timer0);
 
    // execute the kernel
    for (int i = 0; i < iterations; i++)
    {
-     simpleDBF_RGB_GPU(d_src, d_dest, kernel_size, sigma_color, sigma_space);
+     smemDBF_RGB_GPU(d_src, d_dest, kernel_size, sigma_color, sigma_space);
    }
 
    checkCudaErrors(cudaDeviceSynchronize());
