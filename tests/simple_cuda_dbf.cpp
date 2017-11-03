@@ -21,13 +21,17 @@ int main(int argc, char* argv[]) {
       return -1;
     }
 
-  Mat src = imread(argv[1], CV_LOAD_IMAGE_COLOR); 
-  if (!src.data) exit(1);
+  Mat src_rgb = imread(argv[1], CV_LOAD_IMAGE_COLOR); 
+  if (!src_rgb.data) exit(1);
 
-  std::cout << "src rows = " << src.rows << "\n";
-  std::cout << "src cols = " << src.cols << "\n";
+  Mat src_rgba(src_rgb.rows, src_rgb.cols, CV_8UC4);
+  cv::cvtColor(src_rgb, src_rgba, cv::COLOR_RGB2RGBA);
 
-  GpuMat d_src(src);
+
+  std::cout << "src rows = " << src_rgb.rows << "\n";
+  std::cout << "src cols = " << src_rgb.cols << "\n";
+
+  GpuMat d_src(src_rgba);
 
   std::cout << "\nGpuMat info: \n";
   std::cout << "d_src rows = " << d_src.rows << "\n";
@@ -52,7 +56,11 @@ int main(int argc, char* argv[]) {
 
   benchmark(d_src, d_dest, kernel_size, sigma_color, sigma_space, iterations);
 
-  Mat dest(d_dest);
-  imwrite("out.jpg", dest);
+  Mat dest_rgba(d_dest);
+
+  Mat dest_rgb(dest_rgba.rows, dest_rgba.cols, src_rgb.type());
+  cv::cvtColor(dest_rgba, dest_rgb, cv::COLOR_RGBA2RGB);
+
+  imwrite("out.jpg", dest_rgb);
   return 0;
 }
