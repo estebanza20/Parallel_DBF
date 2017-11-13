@@ -96,9 +96,7 @@ void texDBF_RGB_GPU(const GpuMat& d_src, GpuMat& d_dest,
   texDesc.addressMode[1] = cudaAddressModeWrap;
   // texDesc.filterMode = cudaFilterModeLinear;
   texDesc.filterMode = cudaFilterModePoint;
-  // texDesc.readMode = cudaReadModeElementType;
   texDesc.readMode = cudaReadModeNormalizedFloat;
-  // texDesc.normalizedCoords = 1;
 
   cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<uchar4>();
 
