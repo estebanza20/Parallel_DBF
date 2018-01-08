@@ -1,0 +1,20 @@
+# Compilaton related
+*.o
+*.a
+*.x
+
+# Project directories
+build
+bin
+lib
+
+# Temp files
+*.[oe]*
+.tramp_history
+GPATH
+GRTAGS
+GTAGS
+
+# Images related
+images
+*.jpg
