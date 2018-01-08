@@ -20,7 +20,6 @@
 #include <algorithm>
 
 #include <assert.h>
-#include <exception.h>
 #include <math.h>
 
 #ifndef MIN
@@ -34,7 +33,8 @@
 #define EXIT_WAIVED 2
 #endif
 
-#include <helper_string.h>
+#include <cuda/helper/exception.h>
+#include <cuda/helper/helper_string.h>
 
 // namespace unnamed (internal)
 namespace

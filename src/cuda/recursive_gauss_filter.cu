@@ -33,35 +33,65 @@
     Thanks to David Tschumperl� and all the CImg contributors!
 */
 
-#include "recursiveGaussian.hh"
-#include "recursiveGaussian_kernel.cuh"
+#include "cuda/cuda_recursive_gauss_filter.hh"
 
-
-//Round a / b to nearest higher integer value
-int iDivUp(int a, int b)
+__global__
+void d_recursiveGaussian_RGB(const PtrStep<uchar4> src, PtrStep<uchar4> dest,
+                             int w, int h,
+                             float a0, float a1, float a2, float a3,
+                             float b1, float b2,
+                             float coefp, float coefn)
 {
-   return (a % b != 0) ? (a / b + 1) : (a / b);
+   unsigned int x = blockIdx.x*blockDim.x + threadIdx.x;
+
+   if (x >= w) return;
+
+   // forward pass
+   float4 xp = make_float4(0.0f);  // previous input
+   float4 yp = make_float4(0.0f);  // previous output
+   float4 yb = make_float4(0.0f);  // previous output by 2
+#if CLAMP_TO_EDGE
+   xp = gpuMatElemToFloat(src(0,x));
+   yb = coefp*xp;
+   yp = yb;
+#endif
+
+   for (int y = 0; y < h; y++)
+   {
+      float4 xc = gpuMatElemToFloat(src(y,x));
+      float4 yc = a0*xc + a1*xp - b1*yp - b2*yb;
+      dest(y,x) = floatToGpuMatElem(yc);
+      xp = xc;
+      yb = yp;
+      yp = yc;
+   }
+
+   // reverse pass
+   // ensures response is symmetrical
+   float4 xn = make_float4(0.0f);
+   float4 xa = make_float4(0.0f);
+   float4 yn = make_float4(0.0f);
+   float4 ya = make_float4(0.0f);
+#if CLAMP_TO_EDGE
+   xn = xa = gpuMatElemToFloat(src(h-1,x));
+   yn = coefn*xn;
+   ya = yn;
+#endif
+
+   for (int y = h-1; y >= 0; y--)
+   {
+      float4 xc = gpuMatElemToFloat(src(y,x));
+      float4 yc = a2*xn + a3*xa - b1*yn - b2*ya;
+      xa = xn;
+      xn = xc;
+      ya = yn;
+      yn = yc;
+      dest(y,x) = floatToGpuMatElem(gpuMatElemToFloat(dest(y,x)) + yc);
+   }
 }
 
-
-void transpose(const GpuMat& d_src, GpuMat& d_dest)
-{
-   int width = d_src.cols;
-   int height = d_src.rows;
-
-   d_dest.cols = height;
-   d_dest.rows = width;
-   d_dest.step = d_dest.cols * d_dest.elemSize();
-   
-   dim3 grid(iDivUp(width, BLOCK_DIM), iDivUp(height, BLOCK_DIM), 1);
-   dim3 threads(BLOCK_DIM, BLOCK_DIM, 1);
-   d_transpose<<< grid, threads >>>(d_src, d_dest, width, height);
-   getLastCudaError("Kernel execution failed");
-}
-
-
-void gaussianFilterRGB(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
-			float sigma, int order, int nthreads)
+void gaussianFilter_RGB_GPU(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
+                            float sigma, int order, int nthreads)
 {
    int width = d_src.cols;
    int height = d_src.rows;
@@ -124,7 +154,7 @@ void gaussianFilterRGB(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
    coefp = (a0+a1)/(1+b1+b2);
    coefn = (a2+a3)/(1+b1+b2);
    
-   d_recursiveGaussian_rgb<<< iDivUp(width, nthreads), nthreads >>>(d_src,
+   d_recursiveGaussian_RGB<<< iDivUp(width, nthreads), nthreads >>>(d_src,
    								     d_temp,
    								     width,
    								     height,
@@ -134,7 +164,7 @@ void gaussianFilterRGB(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
    								     coefn);
    getLastCudaError("Kernel execution failed");
    
-   transpose(d_temp, d_dest);
+   transpose_GPU(d_temp, d_dest);
    getLastCudaError("transpose: Kernel execution failed");
 
    //Adjust temp dimensions to dest dimensions for recursive gaussian pass
@@ -142,7 +172,7 @@ void gaussianFilterRGB(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
    d_temp.cols = d_dest.cols;
    d_temp.step = d_dest.step;
    
-   d_recursiveGaussian_rgb<<< iDivUp(height, nthreads), nthreads >>>(d_dest,
+   d_recursiveGaussian_RGB<<< iDivUp(height, nthreads), nthreads >>>(d_dest,
    								      d_temp,
    								      height,
    								      width,
@@ -153,5 +183,5 @@ void gaussianFilterRGB(const GpuMat& d_src, GpuMat& d_dest, GpuMat& d_temp,
 
    getLastCudaError("Kernel execution failed");
 
-   transpose(d_temp, d_dest);
+   transpose_GPU(d_temp, d_dest);
 }

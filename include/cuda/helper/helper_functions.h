@@ -17,12 +17,11 @@
 #pragma warning(disable:4996)
 #endif
 
-// includes, project
+// includes, system
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <assert.h>
-#include <exception.h>
 #include <math.h>
 
 #include <fstream>
@@ -30,10 +29,13 @@
 #include <iostream>
 #include <algorithm>
 
+// includes, project
+#include <cuda/helper/exception.h>
+
 // includes, timer, string parsing, image helpers
-#include <helper_timer.h>   // helper functions for timers
-#include <helper_string.h>  // helper functions for string parsing
-#include <helper_image.h>   // helper functions for image compare, dump, data comparisons
+#include <cuda/helper/helper_timer.h>   // helper functions for timers
+#include <cuda/helper/helper_string.h>  // helper functions for string parsing
+#include <cuda/helper/helper_image.h>   // helper functions for image compare, dump, data comparisons
 
 #ifndef EXIT_WAIVED
 #define EXIT_WAIVED 2

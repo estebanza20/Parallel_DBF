@@ -1,7 +1,7 @@
 #PBS -l nodes=4:ppn=1
 #PBS -l walltime=00:05:00
 #PBS -T flush_cache
-#PBS -N "Simple_CUDA_DBF"
+#PBS -N "dbf_GPU"
 #PBS -q default
 #PBS -W x='GRES:gpu at 8'
 #PBS -V
@@ -10,4 +10,4 @@ module add cuda/7.5 opencv/3.1.0 ffmpeg/2.6.2 gcc/4.9.2 openmpi/1.10.0 tbb
 
 cd ${PBS_O_WORKDIR}
 
-./bin/simple_cuda_dbf.x ./images/tiger_merge_2x4k.jpg
+./bin/dbf_gpu_img.x ./images/tiger_merge_2x4k.jpg
