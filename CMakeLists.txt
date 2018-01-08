@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(DBF_GPU)
 
-set(APP_EXEC "dbf_gpu_img.x")
+set(APP_EXEC "dbf_gpu_img")
 set(APP_SRC "src/app/dbf_gpu_img.cpp")
 
 #Packages
@@ -24,12 +24,12 @@ include_directories(
   ${MPI_CXX_INCLUDE_PATH})
 
 #CUDA
-set(CUDA_APP_LIB "cuda_dbf_gpu")
+set(CUDA_APP_LIB "dbf_gpu_cuda")
 file(GLOB_RECURSE CUDA_SRCS "src/cuda/*.cu")
 cuda_add_library(${CUDA_APP_LIB} ${CUDA_SRCS})
 
 #CPP
-set(CPP_APP_LIB "cpp_dbf_gpu")
+set(CPP_APP_LIB "dbf_gpu_cpp")
 file(GLOB_RECURSE SRCS "src/*.cpp")
 add_library(${CPP_APP_LIB} ${SRCS})
 target_include_directories(${CPP_APP_LIB} PUBLIC include)
