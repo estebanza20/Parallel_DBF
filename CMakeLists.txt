@@ -14,7 +14,6 @@ set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
 
-# set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -gencode arch=compute_30,code=sm_30)
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 -arch=sm_35)
 set(CUDA_SEPARABLE_COMPILATION ON)
 
@@ -27,13 +26,11 @@ include_directories(
 #CUDA
 set(CUDA_APP_LIB "cuda_dbf_gpu")
 file(GLOB_RECURSE CUDA_SRCS "src/cuda/*.cu")
-# cuda_add_library(cuda_dbf_gpu ${CUDA_SRCS})
 cuda_add_library(${CUDA_APP_LIB} ${CUDA_SRCS})
 
 #CPP
 set(CPP_APP_LIB "cpp_dbf_gpu")
 file(GLOB_RECURSE SRCS "src/*.cpp")
-# add_library(cpp_dbf_gpu ${SRCS})
 add_library(${CPP_APP_LIB} ${SRCS})
 target_include_directories(${CPP_APP_LIB} PUBLIC include)
 
