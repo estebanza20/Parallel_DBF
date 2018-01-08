@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(DBF_GPU)
 
 set(APP_EXEC "dbf_gpu_img.x")
-set(APP_SRC "app/dbf_gpu_img.cpp")
+set(APP_SRC "src/app/dbf_gpu_img.cpp")
 
 #Packages
 find_package(CUDA REQUIRED)
@@ -24,22 +24,24 @@ include_directories(
   ${OPENCV_INCLUDE_DIR},
   ${MPI_CXX_INCLUDE_PATH})
 
-#CUDA Related
-# file(GLOB CUDA_SRCS "src/cuda/*.cu")
+#CUDA
+set(CUDA_APP_LIB "cuda_dbf_gpu")
 file(GLOB_RECURSE CUDA_SRCS "src/cuda/*.cu")
-cuda_add_library(CudaRelated ${CUDA_SRCS})
+# cuda_add_library(cuda_dbf_gpu ${CUDA_SRCS})
+cuda_add_library(${CUDA_APP_LIB} ${CUDA_SRCS})
 
-#CPP Related
-# file(GLOB SRCS "src/*.cpp")
+#CPP
+set(CPP_APP_LIB "cpp_dbf_gpu")
 file(GLOB_RECURSE SRCS "src/*.cpp")
-add_library(CppRelated ${SRCS})
-target_include_directories(CppRelated PUBLIC include)
+# add_library(cpp_dbf_gpu ${SRCS})
+add_library(${CPP_APP_LIB} ${SRCS})
+target_include_directories(${CPP_APP_LIB} PUBLIC include)
 
 #Executable
 add_executable(${APP_EXEC} ${APP_SRC})
 target_link_libraries(
   ${APP_EXEC}
-  CppRelated
-  CudaRelated
+  ${CPP_APP_LIB}
+  ${CUDA_APP_LIB}
   ${OpenCV_LIBS}
   ${MPI_CXX_LIBRARIES})
